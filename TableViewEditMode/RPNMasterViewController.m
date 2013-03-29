@@ -9,9 +9,7 @@
 #import "RPNMasterViewController.h"
 #import "RPNDetailViewController.h"
 
-@interface RPNMasterViewController ()
-{
-    NSMutableDictionary *selectedArray;
+@interface RPNMasterViewController () {
     NSArray *toolbarItems;
     UIBarButtonItem *deleteButton;
 }
@@ -48,9 +46,6 @@
 
     toolbarItems = [[NSArray alloc] initWithObjects:deleteButton, nil];
     [self setToolbarItems:toolbarItems animated:YES];
-
-    // Setup selection array
-//    selectedArray = [[NSMutableDictionary alloc] init];
 }
 
 - (void)didReceiveMemoryWarning
@@ -87,7 +82,6 @@
     // Clear the selection when finished editing
     if (!editing)
     {
-//        [selectedArray removeAllObjects];
         [self updateSelectionCount];
     }
 }
@@ -146,7 +140,6 @@
 {
     UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
     if ([cell isEditing] == YES) {
-//        [selectedArray setObject:cell forKey:[NSNumber numberWithInt:indexPath.row]];
         [self updateSelectionCount];
     }
 }
@@ -161,7 +154,6 @@
 {
     UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
     if ([cell isEditing] == YES) {
-//        [selectedArray removeObjectForKey:[NSNumber numberWithInt:indexPath.row]];
         [self updateSelectionCount];
     }
     else {
