@@ -7,11 +7,18 @@
 //
 
 #import "RPNMasterViewController.h"
-
 #import "RPNDetailViewController.h"
 
 @interface RPNMasterViewController ()
+{
+    NSMutableDictionary *selectedArray;
+    NSArray *toolbarItems;
+    UIBarButtonItem *deleteButton;
+}
+
+- (void)deleteRows;
 - (void)configureCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath;
+
 @end
 
 @implementation RPNMasterViewController
@@ -29,6 +36,21 @@
 
     UIBarButtonItem *addButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd target:self action:@selector(insertNewObject:)];
     self.navigationItem.rightBarButtonItem = addButton;
+
+    // Create a button
+    deleteButton = [[UIBarButtonItem alloc]
+                                   initWithTitle:@"Delete"
+                                   style:UIBarButtonItemStyleBordered
+                                   target:self
+                                   action:@selector(deleteRows)];
+    [deleteButton setTintColor:[UIColor colorWithRed:0.7 green:0 blue:0 alpha:1]];
+    [deleteButton setEnabled:NO];
+
+    toolbarItems = [[NSArray alloc] initWithObjects:deleteButton, nil];
+    [self setToolbarItems:toolbarItems animated:YES];
+
+    // Setup selection array
+//    selectedArray = [[NSMutableDictionary alloc] init];
 }
 
 - (void)didReceiveMemoryWarning
@@ -57,6 +79,21 @@
     }
 }
 
+- (void)setEditing:(BOOL)editing animated:(BOOL)animated
+{
+    [super setEditing:editing animated:animated];
+    [self.navigationController setToolbarHidden:!editing animated:animated];
+
+    // Clear the selection when finished editing
+    if (!editing)
+    {
+//        [selectedArray removeAllObjects];
+        [self updateSelectionCount];
+    }
+}
+
+
+#pragma mark -
 #pragma mark - Table View
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -72,8 +109,14 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"Cell" forIndexPath:indexPath];
+    NSString *CellIdentifier = @"Cell";
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
+
+    if (cell == nil) {
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
+    }
     [self configureCell:cell atIndexPath:indexPath];
+
     return cell;
 }
 
@@ -96,13 +139,64 @@
             NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
             abort();
         }
-    }   
+    }
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+    if ([cell isEditing] == YES) {
+//        [selectedArray setObject:cell forKey:[NSNumber numberWithInt:indexPath.row]];
+        [self updateSelectionCount];
+    }
 }
 
 - (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath
 {
     // The table view should not be re-orderable.
     return NO;
+}
+
+- (void)tableView:(UITableView *)tableView didDeselectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+    if ([cell isEditing] == YES) {
+//        [selectedArray removeObjectForKey:[NSNumber numberWithInt:indexPath.row]];
+        [self updateSelectionCount];
+    }
+    else {
+        [self performSegueWithIdentifier:@"showDetail" sender:cell];
+    }
+}
+
+- (void)updateSelectionCount
+{
+    NSUInteger count = [[self.tableView indexPathsForSelectedRows] count];
+    NSString *title = @"Delete";
+
+    if (count > 0) {
+        title = [NSString stringWithFormat:@"%@ (%d)", title, count];
+    }
+
+    deleteButton.enabled = (count != 0);
+    deleteButton.title = title;
+}
+
+- (void)deleteRows
+{
+    NSArray *cellIndicesToBeDeleted = [self.tableView indexPathsForSelectedRows];
+    NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
+    for (NSIndexPath *indexPath in cellIndicesToBeDeleted) {
+        [context deleteObject:[self.fetchedResultsController objectAtIndexPath:indexPath]];
+    }
+
+    NSError *error = nil;
+    if (![context save:&error]) {
+        // Replace this implementation with code to handle the error appropriately.
+        // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+        NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+        abort();
+    }
 }
 
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
@@ -114,6 +208,8 @@
     }
 }
 
+
+#pragma mark -
 #pragma mark - Fetched results controller
 
 - (NSFetchedResultsController *)fetchedResultsController
@@ -204,8 +300,8 @@
 }
 
 /*
-// Implementing the above methods to update the table view in response to individual changes may have performance implications if a large number of changes are made simultaneously. If this proves to be an issue, you can instead just implement controllerDidChangeContent: which notifies the delegate that all section and object changes have been processed. 
- 
+// Implementing the above methods to update the table view in response to individual changes may have performance implications if a large number of changes are made simultaneously. If this proves to be an issue, you can instead just implement controllerDidChangeContent: which notifies the delegate that all section and object changes have been processed.
+
  - (void)controllerDidChangeContent:(NSFetchedResultsController *)controller
 {
     // In the simplest, most efficient, case, reload the table view.
